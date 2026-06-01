@@ -1,0 +1,162 @@
+syntax = "proto3";
+
+package chronoflow;
+
+option optimize_for = SPEED;
+
+// ---------------------------------------------------------------------------
+// SchedulerService
+//
+// Client-facing RPCs let callers submit, inspect, and cancel tasks.
+// Worker-facing RPCs let worker nodes register themselves and send periodic
+// heartbeats so the scheduler can track liveness and load.
+// ---------------------------------------------------------------------------
+service SchedulerService {
+
+  // ---- Client-facing ---------------------------------------------------
+
+  // Submit a new task (with optional dependencies) for scheduling.
+  rpc SubmitTask (TaskRequest) returns (TaskResponse);
+
+  // Query the current state and retry count of a submitted task.
+  rpc GetTaskStatus (StatusRequest) returns (StatusResponse);
+
+  // List tasks currently known to the scheduler.
+  rpc ListTasks (ListTasksRequest) returns (ListTasksResponse);
+
+  // Request cancellation of a pending or waiting task.
+  rpc CancelTask (CancelRequest) returns (CancelResponse);
+
+  // Read-only status endpoints for dashboards.
+  rpc ListWorkers (ListWorkersRequest) returns (ListWorkersResponse);
+  rpc GetMetrics (MetricsRequest) returns (MetricsResponse);
+  rpc GetHealth (HealthRequest) returns (HealthResponse);
+
+  // ---- Worker-facing ---------------------------------------------------
+
+  // Called once by each worker node on startup to announce itself.
+  rpc RegisterWorker (WorkerRegistrationRequest) returns (WorkerRegistrationResponse);
+
+  // Called every 2 s by worker nodes to report liveness and load.
+  rpc WorkerHeartbeat (WorkerHeartbeatRequest) returns (WorkerHeartbeatResponse);
+}
+
+// ---- Task submission / status ------------------------------------------
+
+message TaskRequest {
+  string          task_id      = 1;  // globally unique identifier
+  string          command      = 2;  // shell command to execute
+  repeated string dependencies = 3;  // task_ids that must complete first
+  int32           priority     = 4;  // higher = more urgent
+  int32           retry_limit  = 5;  // 0 → scheduler uses default (3)
+}
+
+message TaskResponse {
+  string task_id  = 1;
+  bool   accepted = 2;
+  string message  = 3;  // human-readable reason on rejection
+}
+
+message StatusRequest {
+  string task_id = 1;
+}
+
+message StatusResponse {
+  string task_id     = 1;
+  string state       = 2;  // TaskState as string, e.g. "RUNNING", "SUCCESS"
+  int32  retry_count = 3;
+}
+
+message ListTasksRequest {
+  string state_filter = 1;  // optional TaskState filter, empty = all
+}
+
+message TaskInfo {
+  string          task_id      = 1;
+  string          command      = 2;
+  repeated string dependencies = 3;
+  string          state        = 4;
+  int32           priority     = 5;
+  int32           retry_count  = 6;
+  int32           retry_limit  = 7;
+  string          worker_id    = 8;
+}
+
+message ListTasksResponse {
+  repeated TaskInfo tasks = 1;
+}
+
+message CancelRequest {
+  string task_id = 1;
+}
+
+message CancelResponse {
+  string task_id   = 1;
+  bool   cancelled = 2;
+  string message   = 3;
+}
+
+// ---- Worker registration / heartbeat -----------------------------------
+
+message WorkerRegistrationRequest {
+  string worker_id = 1;  // unique identifier for this worker
+  string address   = 2;  // reachable address, e.g. "10.0.0.5:50051"
+  int32  port      = 3;  // convenience — scheduler may parse from address
+}
+
+message WorkerRegistrationResponse {
+  bool   accepted = 1;
+  string message  = 2;
+}
+
+message WorkerHeartbeatRequest {
+  string worker_id    = 1;
+  int32  active_tasks = 2;  // current in-flight task count on this worker
+}
+
+message WorkerHeartbeatResponse {
+  bool acknowledged = 1;
+}
+
+// ---- Dashboard / monitoring -------------------------------------------
+
+message ListWorkersRequest {}
+
+message WorkerInfo {
+  string worker_id         = 1;
+  string address           = 2;
+  int32  active_tasks      = 3;
+  bool   is_alive          = 4;
+  int64  last_heartbeat_ms = 5;  // age since last heartbeat
+}
+
+message ListWorkersResponse {
+  repeated WorkerInfo workers = 1;
+}
+
+message MetricsRequest {}
+
+message MetricsResponse {
+  int32 total_tasks             = 1;
+  int32 pending_tasks           = 2;
+  int32 ready_tasks             = 3;
+  int32 running_tasks           = 4;
+  int32 retry_wait_tasks        = 5;
+  int32 success_tasks           = 6;
+  int32 failed_tasks            = 7;
+  int32 cancelled_tasks         = 8;
+  int32 workers_total           = 9;
+  int32 workers_alive           = 10;
+  int32 completions_total       = 11;
+  int32 completions_last_minute = 12;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  bool  scheduler_running = 1;
+  int32 workers_total     = 2;
+  int32 workers_alive     = 3;
+  int32 task_total        = 4;
+  int64 uptime_seconds    = 5;
+}

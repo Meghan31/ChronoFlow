@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package chronoflow;
+
+option optimize_for = SPEED;
+
+// ---------------------------------------------------------------------------
+// WorkerService
+//
+// gRPC interface exposed by each worker node.
+//   • The scheduler calls ExecuteTask to dispatch work to the worker.
+//   • The scheduler calls SendHeartbeat as a liveness probe.
+// ---------------------------------------------------------------------------
+service WorkerService {
+  // Dispatch a task for local execution.  Blocks until the task completes.
+  rpc ExecuteTask (ExecuteRequest) returns (ExecuteResponse);
+
+  // Liveness probe from the scheduler — worker responds immediately.
+  rpc SendHeartbeat (HeartbeatRequest) returns (HeartbeatResponse);
+}
+
+message ExecuteRequest {
+  string task_id = 1;
+  string command = 2;
+}
+
+message ExecuteResponse {
+  string task_id   = 1;
+  bool   success   = 2;
+  string output    = 3;  // captured stdout (may be truncated)
+  int32  exit_code = 4;
+}
+
+message HeartbeatRequest {
+  string worker_id    = 1;
+  int32  active_tasks = 2;
+}
+
+message HeartbeatResponse {
+  bool acknowledged = 1;
+}
