@@ -1,0 +1,92 @@
+# Build artifacts
+build/
+dist/
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+*.cmake
+CTestTestfile.cmake
+CMakeUserPresets.json
+
+# Executables
+scheduler_service
+worker_service
+run_tests
+
+# Generated protobuf files
+proto_gen/
+*.pb.cc
+*.pb.h
+*.grpc.pb.cc
+*.grpc.pb.h
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+*.iws
+*.ipr
+CMakeLists.txt.user
+.clangd
+.cache/
+compile_commands.json
+
+# Node modules (for frontend and gateway)
+node_modules/
+frontend-cf/node_modules/
+gateway/node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Frontend build
+frontend-cf/dist/
+frontend-cf/.vite/
+gateway/dist/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime files
+*.pid
+*.seed
+*.pid.lock
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS specific
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Testing
+Testing/Temporary/
+coverage/
+.pytest_cache/
+
+# Dependencies (if using vcpkg or conan)
+vcpkg_installed/
+conan_data/
+
+# temporary files
+*.tmp
+*.temp
